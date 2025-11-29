@@ -171,11 +171,13 @@ export default {
     }
     
     const closeSplitDialog = () => {
+      document.activeElement.blur()
       showSplitDialog.value = false
       selectedPileIndex.value = null
     }
     
     const confirmSplit = () => {
+      document.activeElement.blur()
       if (part1.value === part2.value) {
         alert('Части должны быть неравными!')
         return

@@ -15,7 +15,7 @@
         class="slider"
       />
       
-      <button class="menu-button" @click="$emit('start', chips)">
+      <button class="menu-button" @click="startGame">
         Начать игру! 🎮
       </button>
       
@@ -35,11 +35,17 @@ export default {
     theme: String
   },
   emits: ['start', 'back'],
-  setup() {
+  setup(props, { emit }) {
     const chips = ref(20)
     
+    const startGame = () => {
+      document.activeElement.blur()
+      emit('start', chips.value)
+    }
+    
     return {
-      chips
+      chips,
+      startGame
     }
   }
 }

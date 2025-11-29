@@ -50,6 +50,7 @@ export default {
     const player2 = ref('Игрок 2')
     
     const continueGame = () => {
+      document.activeElement.blur()
       emit('continue', {
         player1: player1.value.trim() || 'Игрок 1',
         player2: player2.value.trim() || 'Игрок 2'

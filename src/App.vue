@@ -279,6 +279,7 @@ export default {
   width: 100%;
   height: 100%;
   transition: background-color 0.3s;
+  overflow: hidden;
 }
 
 .app-container.dark {

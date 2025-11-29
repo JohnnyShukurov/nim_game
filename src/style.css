@@ -4,6 +4,9 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* Added by Gemini for better UX */
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -73,4 +76,13 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Custom styles added by Gemini for cursor fix */
+input[type="range"]:focus {
+  outline: none;
+}
+
+input {
+  caret-color: transparent;
 }
