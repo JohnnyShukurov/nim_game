@@ -1,5 +1,6 @@
 <template>
   <div :class="['chips-container', theme]">
+    <canvas ref="bgCanvas" class="bg-canvas"></canvas>
     <div class="chips-content fade-in">
       <h1 class="title">Начальное количество</h1>
       
@@ -27,7 +28,7 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 
 export default {
   name: 'ChipsInput',
@@ -37,15 +38,56 @@ export default {
   emits: ['start', 'back'],
   setup(props, { emit }) {
     const chips = ref(20)
+    const bgCanvas = ref(null)
     
     const startGame = () => {
       document.activeElement.blur()
       emit('start', chips.value)
     }
+
+    onMounted(() => {
+      if (bgCanvas.value) {
+        const canvas = bgCanvas.value
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+        const ctx = canvas.getContext('2d')
+        
+        const stars = [];
+        for (let i = 0; i < 100; i++) {
+          stars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 2 + 1,
+            speed: Math.random() * 0.5 + 0.1
+          });
+        }
+
+        function animate() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+          
+          stars.forEach(star => {
+            star.y -= star.speed;
+            if (star.y < 0) {
+              star.y = canvas.height;
+              star.x = Math.random() * canvas.width;
+            }
+            ctx.beginPath();
+            ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          requestAnimationFrame(animate);
+        }
+
+        animate();
+      }
+    })
     
     return {
       chips,
-      startGame
+      startGame,
+      bgCanvas
     }
   }
 }
@@ -58,6 +100,22 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+
+.bg-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.chips-content {
+  position: relative;
+  z-index: 1;
 }
 
 .chips-container.dark {

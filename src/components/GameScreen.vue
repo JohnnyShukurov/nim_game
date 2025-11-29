@@ -1,6 +1,6 @@
 <template>
   <div :class="['game-container', theme]">
-    <div class="game-layout">
+    <div :class="['game-layout', 'fade-in']">
       <!-- Боковая панель -->
       <div :class="['sidebar', theme]">
         <div class="sidebar-header">📜 История ходов</div>
@@ -27,14 +27,14 @@
               {{ gameState.player1Name }}
             </div>
             <div class="vs">VS</div>
-            <div :class="['player-name', { active: gameState.currentPlayer === 'player2' }]">
+            <div :class="['player-name', { active: gameState.currentPlayer === 'player2', 'computer-turn': isComputerTurn }]">
               {{ gameState.player2Name }}
             </div>
           </div>
         </div>
         
         <!-- Статус -->
-        <div :class="['status-label', theme]">
+        <div :class="['status-label', theme, { 'computer-turn': isComputerTurn }]">
           Ход: {{ gameState.currentPlayer === 'player1' ? gameState.player1Name : gameState.player2Name }}
         </div>
         
@@ -146,6 +146,10 @@ export default {
     const historyList = ref(null)
     const showHistoryOverlay = ref(false)
 
+    const isComputerTurn = computed(() => {
+        return props.gameState.currentPlayer === 'player2' && props.gameState.player2Name === 'Компьютер';
+    });
+
     const toggleHistoryOverlay = () => {
       showHistoryOverlay.value = !showHistoryOverlay.value
     }
@@ -232,7 +236,8 @@ export default {
       getChipStyle,
       selectPile,
       closeSplitDialog,
-      confirmSplit
+      confirmSplit,
+      isComputerTurn,
     }
   }
 }
@@ -333,6 +338,14 @@ export default {
   color: #10b981;
 }
 
+.player-name.active.computer-turn {
+  color: #e94560;
+}
+
+.light .player-name.active.computer-turn {
+  color: #e94560;
+}
+
 .vs {
   font-size: 20px;
   font-weight: bold;
@@ -353,6 +366,14 @@ export default {
 
 .status-label.light {
   color: #10b981;
+}
+
+.status-label.computer-turn {
+  color: #e94560;
+}
+
+.light .status-label.computer-turn {
+  color: #e94560;
 }
 
 .game-canvas {
@@ -749,6 +770,39 @@ export default {
     font-weight: bold;
     cursor: pointer;
     z-index: 1001;
+  }
+
+  /* Hide back button */
+  .back-btn {
+    display: none;
+  }
+
+  /* Make top-panel sticky */
+  .top-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 999; /* Ensure it's above game content */
+    padding: 0 10px; /* Adjust padding for mobile */
+    gap: 15px; /* Adjust gap for mobile */
+    height: 60px; /* Adjust height for mobile */
+  }
+
+  /* Make status-label sticky */
+  .status-label {
+    position: fixed;
+    top: 60px; /* Below the top-panel */
+    left: 0;
+    width: 100%;
+    z-index: 999;
+    padding: 10px; /* Adjust padding for mobile */
+    height: 45px; /* Adjust height for mobile */
+  }
+
+  /* Adjust game-area padding to prevent content being hidden under fixed headers */
+  .game-area {
+    padding-top: 105px; /* top-panel height (60px) + status-label height (45px) */
   }
 }
 </style>

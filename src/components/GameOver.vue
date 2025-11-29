@@ -1,13 +1,19 @@
 <template>
-  <div :class="['gameover-container', theme]">
+  <div :class="['gameover-container', theme, { defeat: isComputerWinner }]">
+    <canvas ref="bgCanvas" class="bg-canvas"></canvas>
     <canvas ref="confettiCanvas" class="confetti-canvas"></canvas>
     
     <div class="gameover-content fade-in pulse">
-      <h1 class="trophy">{{ winner === 'player1' ? '🏆' : '🤖' }} ПОБЕДА! {{ winner === 'player1' ? '🏆' : '🤖' }}</h1>
-      
-      <div class="winner-name">{{ winnerName }}</div>
-      
-      <p class="winner-text">выигрывает игру!</p>
+      <div v-if="isComputerWinner">
+        <h1 class="defeat-message">💀 ПОРАЖЕНИЕ 💀</h1>
+        <div class="winner-name">{{ winnerName }}</div>
+        <p class="winner-text">выигрывает игру!</p>
+      </div>
+      <div v-else>
+        <h1 class="trophy">{{ winner === 'player1' ? '🏆' : '🤖' }} ПОБЕДА! {{ winner === 'player1' ? '🏆' : '🤖' }}</h1>
+        <div class="winner-name">{{ winnerName }}</div>
+        <p class="winner-text">выигрывает игру!</p>
+      </div>
       
       <div class="stats-box">
         <div class="stats-title">Итоговая позиция:</div>
@@ -37,24 +43,34 @@ export default {
     winner: String,
     winnerName: String,
     piles: Array,
-    moveCount: Number
+    moveCount: Number,
+    gameMode: String
   },
   emits: ['replay', 'menu'],
   setup(props) {
     const confettiCanvas = ref(null)
+    const bgCanvas = ref(null)
+
+    const isComputerWinner = computed(() => {
+      return props.gameMode === 'pvc' && props.winner === 'player2';
+    });
     
     const pilesText = computed(() => {
       return [...props.piles].sort((a, b) => b - a).join(' | ')
     })
     
     onMounted(() => {
+      // Confetti animation
       if (confettiCanvas.value) {
         const canvas = confettiCanvas.value
         canvas.width = window.innerWidth
         canvas.height = window.innerHeight
         const ctx = canvas.getContext('2d')
         
-        const colors = ['#e94560', '#4ecca3', '#5e72e4', '#ffd700']
+        const victory_colors = ['#e94560', '#4ecca3', '#5e72e4', '#ffd700']
+        const defeat_colors = ['#555', '#333', '#777', '#444']
+
+        const colors = isComputerWinner.value ? defeat_colors : victory_colors;
         const confetti = []
         
         for (let i = 0; i < 100; i++) {
@@ -63,13 +79,13 @@ export default {
             y: Math.random() * canvas.height - canvas.height,
             size: Math.random() * 10 + 5,
             color: colors[Math.floor(Math.random() * colors.length)],
-            speedY: Math.random() * 3 + 2,
+            speedY: Math.random() * (isComputerWinner.value ? 5 : 3) + 2,
             speedX: Math.random() * 2 - 1,
             rotation: Math.random() * 360
           })
         }
         
-        function animate() {
+        function animateConfetti() {
           ctx.clearRect(0, 0, canvas.width, canvas.height)
           
           confetti.forEach(c => {
@@ -90,16 +106,56 @@ export default {
             }
           })
           
-          requestAnimationFrame(animate)
+          requestAnimationFrame(animateConfetti)
         }
         
-        animate()
+        animateConfetti()
+      }
+
+      // Background animation
+      if (bgCanvas.value) {
+        const canvas = bgCanvas.value;
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext('2d');
+
+        const stars = [];
+        for (let i = 0; i < 100; i++) {
+          stars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 2 + 1,
+            speed: Math.random() * 0.5 + 0.1
+          });
+        }
+
+        function animateBg() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+          
+          stars.forEach(star => {
+            star.y -= star.speed;
+            if (star.y < 0) {
+              star.y = canvas.height;
+              star.x = Math.random() * canvas.width;
+            }
+            ctx.beginPath();
+            ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          requestAnimationFrame(animateBg);
+        }
+
+        animateBg();
       }
     })
     
     return {
       confettiCanvas,
-      pilesText
+      bgCanvas,
+      pilesText,
+      isComputerWinner,
     }
   }
 }
@@ -115,12 +171,14 @@ export default {
   position: relative;
 }
 
-.gameover-container.dark {
-  background-color: #1a1a2e;
-}
-
-.gameover-container.light {
-  background-color: #f0f4f8;
+.bg-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .confetti-canvas {
@@ -130,6 +188,28 @@ export default {
   width: 100%;
   height: 100%;
   pointer-events: none;
+  z-index: 2;
+}
+
+.gameover-content {
+  position: relative;
+  z-index: 1;
+}
+
+.gameover-container.dark {
+  background-color: #1a1a2e;
+}
+
+.gameover-container.dark.defeat {
+  background-color: #2b0b0e;
+}
+
+.gameover-container.light {
+  background-color: #f0f4f8;
+}
+
+.gameover-container.light.defeat {
+  background-color: #f8f0f0;
 }
 
 .gameover-content {
@@ -138,17 +218,31 @@ export default {
   border-radius: 20px;
   text-align: center;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  z-index: 1;
+}
+
+.defeat .gameover-content {
+  background: rgba(96, 15, 25, 0.95);
 }
 
 .light .gameover-content {
   background: rgba(255, 255, 255, 0.95);
 }
 
+.light.defeat .gameover-content {
+  background: rgba(255, 230, 230, 0.95);
+}
+
 .trophy {
   font-size: 2.33rem;
   font-weight: bold;
   color: #ffd700;
+  margin-bottom: 20px;
+}
+
+.defeat-message {
+  font-size: 2.33rem;
+  font-weight: bold;
+  color: #e94560;
   margin-bottom: 20px;
 }
 
@@ -159,8 +253,16 @@ export default {
   margin-bottom: 10px;
 }
 
+.defeat .winner-name {
+  color: #e94560;
+}
+
 .light .winner-name {
   color: #10b981;
+}
+
+.light.defeat .winner-name {
+  color: #e94560;
 }
 
 .winner-text {

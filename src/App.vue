@@ -45,6 +45,7 @@
         :winnerName="winnerName"
         :piles="gameState.piles"
         :move-count="gameState.moveHistory.length"
+        :game-mode="gameMode"
         @replay="currentScreen = 'chips'"
         @menu="currentScreen = 'menu'"
       />
@@ -261,6 +262,7 @@ export default {
     return {
       currentScreen,
       theme,
+      gameMode,
       gameState,
       winner,
       winnerName,
