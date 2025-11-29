@@ -238,23 +238,4 @@ export default {
   box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
 }
 
-@media (max-width: 768px) {
-  .gameover-content {
-    width: 90%;
-    padding: 30px 25px;
-  }
-
-  .trophy {
-    font-size: 1.8rem;
-  }
-
-  .winner-name {
-    font-size: 1.5rem;
-  }
-
-  .button-group {
-    flex-direction: column;
-    gap: 15px;
-  }
-}
 </style>

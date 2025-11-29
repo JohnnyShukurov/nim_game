@@ -104,6 +104,28 @@
         </div>
       </div>
     </div>
+
+    <!-- History Button for Mobile -->
+    <button class="history-btn-mobile" @click="toggleHistoryOverlay">
+      История ходов
+    </button>
+
+    <!-- History Overlay -->
+    <div v-if="showHistoryOverlay" class="history-overlay" @click="toggleHistoryOverlay">
+      <div :class="['history-overlay-content', theme]" @click.stop>
+        <div class="sidebar-header">📜 История ходов</div>
+        <div class="history-list">
+          <div class="history-message system">Игра началась!</div>
+          <div
+            v-for="(move, index) in gameState.moveHistory"
+            :key="index"
+            class="history-message"
+          >
+            {{ move.player }}: {{ move.original }} → {{ move.part1 }} и {{ move.part2 }}
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -122,6 +144,11 @@ export default {
     const showSplitDialog = ref(false)
     const part1 = ref(1)
     const historyList = ref(null)
+    const showHistoryOverlay = ref(false)
+
+    const toggleHistoryOverlay = () => {
+      showHistoryOverlay.value = !showHistoryOverlay.value
+    }
     
     const currentPileSize = computed(() => {
       if (selectedPileIndex.value !== null) {
@@ -199,6 +226,8 @@ export default {
       part2,
       currentPileSize,
       historyList,
+      showHistoryOverlay,
+      toggleHistoryOverlay,
       getChipClass,
       getChipStyle,
       selectPile,
@@ -661,47 +690,65 @@ export default {
   box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
 }
 
+.history-btn-mobile {
+  display: none;
+}
+
+.history-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.history-overlay-content {
+  width: 90%;
+  height: 80%;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-overlay-content.dark {
+  background-color: #0f3460;
+}
+
+.history-overlay-content.light {
+  background-color: white;
+}
+
+.history-overlay-content .history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
 @media (max-width: 768px) {
-  .game-layout {
-    flex-direction: column-reverse;
-  }
-
   .sidebar {
-    width: 100%;
-    height: 170px;
-    border-left: none;
-    border-top: 2px solid #1a1a2e;
-    flex-shrink: 0;
+    display: none;
   }
 
-  .sidebar.light {
-    border-top: 2px solid #e1e8ed;
-  }
-
-  .history-list {
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    padding-bottom: 15px;
-  }
-
-  .history-message {
-    min-width: 180px;
-    flex-shrink: 0;
-  }
-
-  .top-panel {
-    padding: 0 10px;
-    gap: 15px;
-  }
-
-  .player-name {
-    font-size: 14px;
-    min-width: 100px;
-  }
-
-  .split-dialog {
-    width: 90%;
+  .history-btn-mobile {
+    display: block;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    background-color: #e94560;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 1001;
   }
 }
 </style>

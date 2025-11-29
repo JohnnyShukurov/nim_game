@@ -226,24 +226,4 @@ export default {
 .light .rules {
   color: #5a6c7d;
 }
-
-@media (max-width: 768px) {
-  .menu-content {
-    padding: 40px 30px;
-    width: 90%;
-  }
-
-  .title, .title-shadow {
-    font-size: 40px;
-  }
-
-  .subtitle {
-    font-size: 12px;
-  }
-
-  .menu-button {
-    font-size: 14px;
-    padding: 12px 30px;
-  }
-}
 </style>
