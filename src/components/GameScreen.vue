@@ -188,7 +188,9 @@ export default {
     
     const selectPile = (index) => {
       if (props.gameState.animating) return
-      if (props.gameState.currentPlayer === 'player2') return
+      if (props.gameState.currentPlayer === 'player2' && props.gameState.player2Name === 'Компьютер') {
+  return
+}
       
       const pile = props.gameState.piles[index]
       if (pile < 3) {
