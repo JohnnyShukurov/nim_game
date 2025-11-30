@@ -20,7 +20,7 @@
       <div class="game-area">
         <!-- Верхняя панель -->
         <div :class="['top-panel', theme]">
-          <button class="back-btn" @click="$emit('back')">⬅</button>
+          
           
           <div class="players-info">
             <div :class="['player-name', { active: gameState.currentPlayer === 'player1' }]">
