@@ -170,6 +170,156 @@ export default {
       }
     }
 
+    // ============ НОВЫЙ АЛГОРИТМ ДЛЯ СЛОЖНОГО УРОВНЯ ============
+    
+    // Генерация всех возможных ходов для текущей позиции
+    const generateAllMoves = (piles) => {
+      const moves = []
+      piles.forEach((pileSize, pileIndex) => {
+        if (pileSize >= 3) {
+          // Генерируем все возможные неравные разбиения
+          for (let part1 = 1; part1 < pileSize; part1++) {
+            const part2 = pileSize - part1
+            if (part1 !== part2) {
+              moves.push({ pileIndex, part1, part2 })
+            }
+          }
+        }
+      })
+      return moves
+    }
+
+    // Применение хода и получение новой позиции
+    const applyMove = (piles, move) => {
+      const newPiles = [...piles]
+      newPiles.splice(move.pileIndex, 1)
+      newPiles.push(move.part1, move.part2)
+      return newPiles.sort((a, b) => b - a)
+    }
+
+    // Эвристическая оценка позиции
+    const evaluatePosition = (piles) => {
+      const validPiles = piles.filter(p => p >= 3)
+      
+      // Если нет ходов - проигрышная позиция
+      if (validPiles.length === 0) {
+        return -10000
+      }
+
+      let score = 0
+      
+      // 1. Количество возможных ходов (чем больше - тем лучше)
+      const moveCount = generateAllMoves(piles).length
+      score += moveCount * 50
+      
+      // 2. Количество кучек (больше кучек = больше вариантов)
+      score += piles.length * 30
+      
+      // 3. Средний размер кучек (меньше - лучше, больше контроля)
+      const avgSize = piles.reduce((sum, p) => sum + p, 0) / piles.length
+      score -= avgSize * 10
+      
+      // 4. Бонус за разнообразие размеров кучек
+      const uniqueSizes = new Set(piles).size
+      score += uniqueSizes * 20
+      
+      // 5. Штраф за большие кучки (сложнее контролировать)
+      const maxPile = Math.max(...piles)
+      if (maxPile > 10) {
+        score -= (maxPile - 10) * 5
+      }
+      
+      return score
+    }
+
+    // Минимакс с альфа-бета отсечением
+    const minimax = (piles, depth, alpha, beta, isMaximizing) => {
+      // Проверка окончания игры
+      const validMoves = generateAllMoves(piles)
+      if (validMoves.length === 0) {
+        // Если нет ходов, текущий игрок проигрывает
+        return isMaximizing ? -10000 : 10000
+      }
+      
+      // Достигнута максимальная глубина - оцениваем позицию
+      if (depth === 0) {
+        return evaluatePosition(piles)
+      }
+
+      if (isMaximizing) {
+        // Ход компьютера - максимизируем оценку
+        let maxEval = -Infinity
+        
+        for (const move of validMoves) {
+          const newPiles = applyMove(piles, move)
+          const evalScore = minimax(newPiles, depth - 1, alpha, beta, false)
+          maxEval = Math.max(maxEval, evalScore)
+          alpha = Math.max(alpha, evalScore)
+          
+          // Альфа-бета отсечение
+          if (beta <= alpha) {
+            break
+          }
+        }
+        
+        return maxEval
+      } else {
+        // Ход противника - минимизируем оценку
+        let minEval = Infinity
+        
+        for (const move of validMoves) {
+          const newPiles = applyMove(piles, move)
+          const evalScore = minimax(newPiles, depth - 1, alpha, beta, true)
+          minEval = Math.min(minEval, evalScore)
+          beta = Math.min(beta, evalScore)
+          
+          // Альфа-бета отсечение
+          if (beta <= alpha) {
+            break
+          }
+        }
+        
+        return minEval
+      }
+    }
+
+    // Выбор лучшего хода с помощью минимакса
+    const findBestMove = (piles) => {
+      const moves = generateAllMoves(piles)
+      if (moves.length === 0) return null
+
+      // Определяем глубину поиска в зависимости от количества фишек
+      const totalChips = piles.reduce((sum, p) => sum + p, 0)
+      let maxDepth
+      
+      if (totalChips <= 15) {
+        maxDepth = 5  // Малое количество - глубокий поиск
+      } else if (totalChips <= 30) {
+        maxDepth = 4  // Среднее количество
+      } else if (totalChips <= 50) {
+        maxDepth = 3  // Много фишек - ограничиваем глубину
+      } else {
+        maxDepth = 2  // Очень много - минимальная глубина
+      }
+
+      let bestMove = null
+      let bestScore = -Infinity
+
+      for (const move of moves) {
+        const newPiles = applyMove(piles, move)
+        const score = minimax(newPiles, maxDepth, -Infinity, Infinity, false)
+        
+        if (score > bestScore) {
+          bestScore = score
+          bestMove = move
+        }
+      }
+
+      return bestMove
+    }
+
+    // ============ ОСНОВНАЯ ЛОГИКА ХОДА КОМПЬЮТЕРА ============
+    
     const makeComputerMove = () => {
       const validPiles = gameState.piles
         .map((size, index) => ({ index, size }))
@@ -184,75 +334,81 @@ export default {
       let pileIndex, pileSize, part1, part2
 
       if (difficulty.value === 'easy') {
-        // Легкий: случайный ход
-        const pile = validPiles[Math.floor(Math.random() * validPiles.length)]
-        pileIndex = pile.index
-        pileSize = pile.size
-        part1 = Math.floor(Math.random() * (pileSize - 1)) + 1
-        while (part1 === pileSize - part1) {
-          part1 = Math.floor(Math.random() * (pileSize - 1)) + 1
-        }
-        part2 = pileSize - part1
-      } else if (difficulty.value === 'medium') {
-        // Средний: избегаем дубликатов
+        // ЛЕГКИЙ: Полностью случайная игра
+        // 1. Выбираем случайную кучку из всех доступных (≥3)
         const pile = validPiles[Math.floor(Math.random() * validPiles.length)]
         pileIndex = pile.index
         pileSize = pile.size
         
-        const possibleSplits = []
+        // 2. Делим на две случайные неравные части
+        // Генерируем все возможные разбиения
+        const allSplits = []
         for (let i = 1; i < pileSize; i++) {
           if (i !== pileSize - i) {
-            possibleSplits.push([i, pileSize - i])
+            allSplits.push([i, pileSize - i])
           }
         }
         
-        const goodSplits = possibleSplits.filter(
+        // Выбираем любое случайное разбиение
+        const randomSplit = allSplits[Math.floor(Math.random() * allSplits.length)]
+        part1 = randomSplit[0]
+        part2 = randomSplit[1]
+        
+      } else if (difficulty.value === 'medium') {
+        // СРЕДНИЙ: Стратегия с базовой тактикой
+        
+        // 1. Приоритет: делим самую большую кучку (захват контроля)
+        const largestPile = validPiles.reduce((max, p) => p.size > max.size ? p : max)
+        pileIndex = largestPile.index
+        pileSize = largestPile.size
+        
+        // 2. Генерируем все возможные разбиения
+        const allSplits = []
+        for (let i = 1; i < pileSize; i++) {
+          if (i !== pileSize - i) {
+            allSplits.push([i, pileSize - i])
+          }
+        }
+        
+        // 3. Фильтруем "хорошие" ходы (избегаем дубликатов существующих кучек)
+        const goodSplits = allSplits.filter(
           ([p1, p2]) => !gameState.piles.includes(p1) && !gameState.piles.includes(p2)
         )
         
-        const split = goodSplits.length > 0
-          ? goodSplits[Math.floor(Math.random() * goodSplits.length)]
-          : possibleSplits[Math.floor(Math.random() * possibleSplits.length)]
-        
-        part1 = split[0]
-        part2 = split[1]
-      } else {
-        // Сложный: оптимальная стратегия
-        let nimSum = 0
-        gameState.piles.forEach(size => {
-          nimSum ^= size
-        })
-        
-        let moveFound = false
-        
-        if (nimSum !== 0) {
-          for (const pile of validPiles) {
-            const target = pile.size ^ nimSum
-            if (target < pile.size && target > 0) {
-              const other = pile.size - target
-              if (target !== other) {
-                pileIndex = pile.index
-                pileSize = pile.size
-                part1 = target
-                part2 = other
-                moveFound = true
-                break
-              }
-            }
-          }
+        // 4. Если есть хорошие ходы - выбираем среди них
+        // Иначе берём любой допустимый
+        let chosenSplit
+        if (goodSplits.length > 0) {
+          // Среди хороших ходов выбираем тот, что создаёт больше разнообразия
+          // Предпочитаем делить на более мелкие части
+          chosenSplit = goodSplits.sort((a, b) => {
+            const diffA = Math.abs(a[0] - a[1])
+            const diffB = Math.abs(b[0] - b[1])
+            return diffB - diffA // Больше разница = лучше
+          })[0]
+        } else {
+          // Нет "хороших" - берём случайный
+          chosenSplit = allSplits[Math.floor(Math.random() * allSplits.length)]
         }
         
-        if (!moveFound) {
-          const pile = validPiles.reduce((max, p) => p.size > max.size ? p : max)
+        part1 = chosenSplit[0]
+        part2 = chosenSplit[1]
+        
+      } else {
+        // Сложный: минимакс с эвристикой
+        const bestMove = findBestMove(gameState.piles)
+        
+        if (bestMove) {
+          pileIndex = bestMove.pileIndex
+          part1 = bestMove.part1
+          part2 = bestMove.part2
+        } else {
+          // Запасной вариант (не должно произойти)
+          const pile = validPiles[0]
           pileIndex = pile.index
           pileSize = pile.size
-          part1 = Math.floor(pileSize / 3) || 1
-          part2 = pileSize - part1
-          
-          while (part1 === part2) {
-            part1++
-            part2 = pileSize - part1
-          }
+          part1 = 1
+          part2 = pileSize - 1
         }
       }
 
